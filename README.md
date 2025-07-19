@@ -22,9 +22,32 @@ It reads cab details from `customers.json` and writes the results to `result.jso
 ```
 
 ## How to Run
-```
-g++ main.cpp -o nearby_cabs
-./nearby_cabs
-```
 
-The output will be saved in `result.json`.
+1. **Download or Clone the Repository**
+   - Clone using Git:
+     ```
+     git clone https://github.com/<your-username>/nearby-cab-finder.git
+
+2. **Open a Terminal/Command Prompt in the Project Folder**
+   Example (Windows):
+   ```
+   cd C:\Users\<YourUsername>\Downloads\nearby-cab-finder
+   ```
+
+3. **Compile the Program**
+   ```
+   g++ main.cpp -o nearby_cabs
+   ```
+
+4. **Run the Program**
+   ```
+   nearby_cabs.exe    # Windows
+   ./nearby_cabs      # Linux/Mac
+   ```
+## Image of Terminal for Reference
+
+<img width="1421" height="472" alt="image" src="https://github.com/user-attachments/assets/9f2832c3-0f1b-4a74-80c0-2a49e9fad728" />
+
+5. **Check Output**
+   The output will be in `result.json` in the same folder.
+
