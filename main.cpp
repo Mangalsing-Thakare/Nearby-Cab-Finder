@@ -1,147 +1,106 @@
-// Obtain latitude and longitude of each cab in string format along with their user-id and name from JSON encoded input file.
-
-// Convert latitude and longitude of the cab present in string format to double.
-
-// Convert latitude and longitude of both user and cab present in degrees to radians.
-
-// Calculate distance between the user's location and the cab using Great Circle Distance formula.
-
-// If distance is found to be less than or equal to 50kms then output the user-id and name of the cab driver to a new file else take no action.
-
 #include <bits/stdc++.h>
 using namespace std;
 
-// latitude and longitude of the customer who needs a cab.
-#define lat1d 12.9611159
-#define lon1d 77.6362214
+// User's location
+#define USER_LAT 12.9611159
+#define USER_LON 77.6362214
 
-// values of pi and earth radius.
-#define pi 3.14159265358979323846
-#define earth_radius 6371.0
+// Constants
+#define PI 3.14159265358979323846
+#define EARTH_RADIUS 6371.0
 
-ifstream customer_list ("customers.json");
-ofstream out ("result.json");
+// Input and output files
+ifstream inputFile("customers.json");
+ofstream outputFile("result.json");
 
-// function to convert degree to radian.
+// Convert degrees to radians
 double degToRad(double deg) {
-  return ( deg * pi / 180 );
+    return deg * PI / 180.0;
 }
 
-// function to calculate distance between 2 given locations using Great Circle Distance formula.
+// Calculate Great Circle Distance between user and cab
+double calculateDistance(double cabLat, double cabLon) {
+    double lat1 = degToRad(USER_LAT);
+    double lon1 = degToRad(USER_LON);
+    double lat2 = degToRad(cabLat);
+    double lon2 = degToRad(cabLon);
 
-double distanceEarth(double lat2d, double lon2d) {
-  double lat1, lon1, lat2, lon2, delta_lon, central_ang;
-    lat1 = degToRad(lat1d);
-    lon1 = degToRad(lon1d);
-    lat2 = degToRad(lat2d);
-    lon2 = degToRad(lon2d);
-
-    delta_lon = lon2 - lon1;
-
-    //great circle distance formula
-    central_ang = acos ( sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(delta_lon) );
-      return (earth_radius * central_ang);
+    double deltaLon = lon2 - lon1;
+    double centralAngle = acos(sin(lat1) * sin(lat2) +
+                               cos(lat1) * cos(lat2) * cos(deltaLon));
+    return EARTH_RADIUS * centralAngle;
 }
 
-// structure which contains data and functions for accessing and processing data from the given customer.json file.
-struct json {
-  // i and  j are used to access various elements of the char arrays.
-  // x and y are used to measure the size of the element of latitude_as_string array and longitude_as_string array respectively.
-  // m is used to measure the size of the element of id_as_string array.
-  // n is used to measure the size of the element of name array.
-  // f keeps count of " " " symbol. fi keeps count of " : " symbol.
-  long long int length, i, j, x, y, m, n, f, fi, id[100000];
-  char latitude_as_string[1000], longitude_as_string[1000], id_as_string[1000], name[1000];
-  double lat2d, lon2d;
-  
-  // to get each line of customer.json file as string.
-  string line;
-  
+// JSON-like parser structure
+struct CabParser {
+    string line;
+    char latitudeStr[100], longitudeStr[100], idStr[100], nameStr[100];
 
-  // function to check whether distance between 2 points is less than 50km or not.
-  void distance_calculator() {
-    if(distanceEarth(lat2d, lon2d) <= 50.0000) {
-      id[i] = atoll(id_as_string);
-      i++;
-      out << "{\"user_id\": " << id[i-1] << ", \"name\": " << name << "}" << endl;
+    // Check and write cab if within 50 km
+    void checkAndWrite(double cabLat, double cabLon) {
+        if (calculateDistance(cabLat, cabLon) <= 50.0) {
+            outputFile << "{\"user_id\": " << idStr
+                       << ", \"name\": \"" << nameStr << "\"}\n";
+        }
     }
-  }
 
-  // function to read various attributes like latitude, longitude, name, id,
-  // etc, from customer.json file. simplistic approach is used to get JSON
-  // attributes
-  void json_parser() {
-    if(customer_list.is_open()) {
-      while(getline(customer_list, line)) {
-        f = 0; x = 0; y = 0; fi = 0; m = 0; n = 0;
-        length = line.size();
-
-        for(j = 0; j < length; j++) {
-          if(line[j] == '"') f++;
-          else if(line[j] == ':') fi++;
-          
-          // to get latitude of the location.
-          if(f == 3) {
-            j++;
-            while(line[j] != '"') {
-              latitude_as_string[x] = line[j];
-              x++; j++;
-            }
-            j--; latitude_as_string[x] = '\0';
-          }
-          // to get longitude of the location.
-          else if(f == 13) { 
-            j++;
-            while(line[j] != '"') {
-              longitude_as_string[y] = line[j];
-              y++; j++;
-            }
-            j--; longitude_as_string[y] = '\0';
-          }
-
-          // to get id of the friend.
-          if(fi == 2) {
-            j += 2;
-            while(line[j] != ',') {
-              id_as_string[m] = line[j];
-              m++; j++;
-            }
-            j--; id_as_string[m] = '\0';
-            fi++;
-          }
-          // to get name of the friend.
-          else if(fi == 4) {
-            j += 2;
-            while(line[j] != ',') {
-              name[n] =line[j];
-              n++; j++;
-            }
-            j--; name[n] = '\0';
-            fi++; f += 2;
-          }
+    // Parse the file and process each cab
+    void parse() {
+        if (!inputFile.is_open()) {
+            cerr << "Error: customers.json file not found!" << endl;
+            return;
         }
 
-        // converting latitude and longitude in string to float.
-        lat2d = atof(latitude_as_string);
-        lon2d = atof(longitude_as_string);
-        distance_calculator();
-      }
+        while (getline(inputFile, line)) {
+            memset(latitudeStr, 0, sizeof(latitudeStr));
+            memset(longitudeStr, 0, sizeof(longitudeStr));
+            memset(idStr, 0, sizeof(idStr));
+            memset(nameStr, 0, sizeof(nameStr));
+
+            // Extract fields
+            size_t latPos = line.find("\"latitude\":");
+            size_t lonPos = line.find("\"longitude\":");
+            size_t idPos = line.find("\"user_id\":");
+            size_t namePos = line.find("\"name\":");
+
+            if (latPos != string::npos) {
+                size_t start = line.find("\"", latPos + 11) + 1;
+                size_t end = line.find("\"", start);
+                strncpy(latitudeStr, line.substr(start, end - start).c_str(), 99);
+            }
+
+            if (lonPos != string::npos) {
+                size_t start = line.find("\"", lonPos + 12) + 1;
+                size_t end = line.find("\"", start);
+                strncpy(longitudeStr, line.substr(start, end - start).c_str(), 99);
+            }
+
+            if (idPos != string::npos) {
+                size_t start = line.find(" ", idPos + 10) + 1;
+                size_t end = line.find(",", start);
+                strncpy(idStr, line.substr(start, end - start).c_str(), 99);
+            }
+
+            if (namePos != string::npos) {
+                size_t start = line.find("\"", namePos + 7) + 1;
+                size_t end = line.find("\"", start);
+                strncpy(nameStr, line.substr(start, end - start).c_str(), 99);
+            }
+
+            // Convert to double and calculate distance
+            double cabLat = atof(latitudeStr);
+            double cabLon = atof(longitudeStr);
+            checkAndWrite(cabLat, cabLon);
+        }
+
+        inputFile.close();
+        outputFile.close();
     }
-
-    // closing stream of customer's file.
-    customer_list.close();
-
-    // closing stream of answer's file.
-    out.close();
-  }
 };
 
 int main() {
-  // creating object of the structure json
-  json obj;
-
-  // to read customers.json file.
-  obj.json_parser();
-  
-  return 0;
+    CabParser parser;
+    parser.parse();
+    cout << "Nearby cabs (within 50 km) saved in result.json" << endl;
+    return 0;
 }
